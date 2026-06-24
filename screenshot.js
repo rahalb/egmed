@@ -12,6 +12,14 @@ const { chromium } = require('playwright');
     timeout: 60000
   });
 
+  await page.addStyleTag({
+    content: `
+      html, body {
+        background: #ffffff !important;
+      }
+    `
+  });
+
   await page.waitForTimeout(3000);
 
   await page.screenshot({
