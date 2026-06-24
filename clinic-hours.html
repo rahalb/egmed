@@ -3,7 +3,6 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Clinic Hours</title>
   <style>
     html, body {
       margin: 0;
@@ -18,6 +17,10 @@
   </style>
 </head>
 <body>
-  <img src="https://rahalb.github.io/egmed/clinic-hours.png?v=1" alt="Clinic Hours">
+  <img id="hours" alt="Clinic Hours">
+  <script>
+    const img = document.getElementById('hours');
+    img.src = 'https://rahalb.github.io/egmed/clinic-hours.png?t=' + Date.now();
+  </script>
 </body>
 </html>
