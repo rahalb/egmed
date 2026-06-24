@@ -1,13 +1,13 @@
 {
-  "clinic_name": "EAST GWILLIMBURY MEDICAL CENTRE",
-  "status": "open",
-  "today_name": "Tuesday",
-  "today_hours": "10:00 AM – 3:00 PM, 4:30 – 7:00 PM",
-  "monday": "10:00 AM – 3:00 PM, 4:30 – 7:00 PM",
-  "tuesday": "10:00 AM – 3:00 PM, 4:30 – 7:00 PM",
+  "clinic_name": "East Gwillimbury Medical Centre",
+  "status": "closed",
+  "today_name": "Wednesday",
+  "today_hours": "10:00 AM – 3:00 PM",
+  "sunday": "Closed",
+  "monday": "10:00 AM – 3:00 PM, 4:30 PM – 7:00 PM",
+  "tuesday": "10:00 AM – 3:00 PM, 4:30 PM – 7:00 PM",
   "wednesday": "10:00 AM – 3:00 PM",
   "thursday": "10:00 AM – 3:00 PM",
-  "friday": "Closed",
-  "saturday": "10:10 AM – 2:10 PM",
-  "sunday": "Closed"
+  "friday": "10:00 AM – 3:00 PM",
+  "saturday": "10:10 AM – 2:10 PM"
 }
