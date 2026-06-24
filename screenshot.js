@@ -7,7 +7,7 @@ const { chromium } = require('playwright');
     deviceScaleFactor: 2
   });
 
-  await page.goto('https://rahalb.github.io/egmed/', {
+  await page.goto('https://rahalb.github.io/egmed/clinic-hours.html', {
     waitUntil: 'networkidle',
     timeout: 60000
   });
