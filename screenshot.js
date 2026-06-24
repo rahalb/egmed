@@ -14,7 +14,10 @@ const { chromium } = require('playwright');
 
   await page.addStyleTag({
     content: `
-      html, body {
+      html, body, .page {
+        background: #ffffff !important;
+      }
+      img {
         background: #ffffff !important;
       }
     `
