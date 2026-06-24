@@ -3,7 +3,7 @@ name: Update clinic image
 on:
   workflow_dispatch:
   schedule:
-    - cron: '*/15 * * * *'
+    - cron: "*/15 * * * *"
 
 permissions:
   contents: write
@@ -11,6 +11,9 @@ permissions:
 jobs:
   screenshot:
     runs-on: ubuntu-latest
+    env:
+      GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+      GOOGLE_PLACE_ID: ${{ secrets.GOOGLE_PLACE_ID }}
 
     steps:
       - name: Check out repo
@@ -19,21 +22,24 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: 20
 
-      - name: Install Playwright
+      - name: Install dependencies
         run: |
           npm init -y
           npm install playwright
           npx playwright install --with-deps chromium
 
+      - name: Update clinic hours from Google
+        run: node update-hours.js
+
       - name: Capture screenshot
         run: node screenshot.js
 
-      - name: Commit updated image
+      - name: Commit updated files
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add clinic-hours.png package.json package-lock.json
-          git diff --staged --quiet || git commit -m "Auto-update clinic-hours.png [skip ci]"
+          git add clinic-hours-sensecraft.json clinic-hours.png package.json package-lock.json update-hours.js
+          git diff --staged --quiet || git commit -m "Auto-update clinic hours and image [skip ci]"
           git push
