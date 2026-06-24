@@ -4,7 +4,7 @@ const { chromium } = require('playwright');
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({
     viewport: { width: 800, height: 480 },
-    deviceScaleFactor: 2
+    deviceScaleFactor: 1
   });
 
   await page.goto('https://rahalb.github.io/egmed/clinic-hours-source.html', {
@@ -12,10 +12,11 @@ const { chromium } = require('playwright');
     timeout: 60000
   });
 
-  await page.waitForSelector('.title', { timeout: 60000 });
+  await page.waitForSelector('#clinic_name', { timeout: 60000 });
 
-  await page.locator('.page').screenshot({
-    path: 'clinic-hours.png'
+  await page.screenshot({
+    path: 'clinic-hours.png',
+    fullPage: false
   });
 
   await browser.close();
