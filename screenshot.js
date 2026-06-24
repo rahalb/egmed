@@ -7,17 +7,21 @@ const { chromium } = require('playwright');
     deviceScaleFactor: 2
   });
 
-  await page.goto('https://rahalb.github.io/egmed/clinic-hours.html', {
+  await page.goto('https://rahalb.github.io/egmed/clinic-hours-source.html', {
     waitUntil: 'networkidle',
     timeout: 60000
   });
 
   await page.addStyleTag({
     content: `
-      html, body, .page {
+      html, body {
+        margin: 0 !important;
         background: #ffffff !important;
       }
-      img {
+      * {
+        background-color: transparent;
+      }
+      .page {
         background: #ffffff !important;
       }
     `
