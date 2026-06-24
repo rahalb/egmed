@@ -1,109 +1,210 @@
-const fs = require('fs');
-
-const API_KEY = process.env.GOOGLE_MAPS_API_KEY;
-const PLACE_ID = process.env.GOOGLE_PLACE_ID;
-
-if (!API_KEY) throw new Error('Missing GOOGLE_MAPS_API_KEY');
-if (!PLACE_ID) throw new Error('Missing GOOGLE_PLACE_ID');
-
-const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-
-function hhmmToDisplay(hhmm) {
-  const hh = parseInt(hhmm.slice(0, 2), 10);
-  const mm = hhmm.slice(2);
-  const ampm = hh >= 12 ? 'PM' : 'AM';
-  let hour = hh % 12;
-  if (hour === 0) hour = 12;
-  return `${hour}:${mm} ${ampm}`;
-}
-
-function buildWeeklyHours(periods) {
-  const weekly = {
-    monday: 'Closed',
-    tuesday: 'Closed',
-    wednesday: 'Closed',
-    thursday: 'Closed',
-    friday: 'Closed',
-    saturday: 'Closed',
-    sunday: 'Closed'
-  };
-
-  const grouped = {
-    sunday: [],
-    monday: [],
-    tuesday: [],
-    wednesday: [],
-    thursday: [],
-    friday: [],
-    saturday: []
-  };
-
-  for (const period of periods || []) {
-    if (!period.open || !period.close) continue;
-
-    const openDay = DAY_NAMES[period.open.day];
-    const openTime = hhmmToDisplay(period.open.time);
-    const closeTime = hhmmToDisplay(period.close.time);
-
-    grouped[openDay].push(`${openTime} – ${closeTime}`);
-  }
-
-  for (const day of Object.keys(grouped)) {
-    if (grouped[day].length > 0) {
-      weekly[day] = grouped[day].join(', ');
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=800, initial-scale=1">
+  <title>Clinic Hours Source</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --text: #111111;
+      --muted: #6f6a64;
+      --line: #c8c1b8;
+      --panel: #ffffff;
     }
-  }
 
-  return weekly;
-}
+    html, body {
+      margin: 0;
+      width: 800px;
+      height: 480px;
+      background: var(--bg);
+      overflow: hidden;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--text);
+    }
 
-async function main() {
-  const url =
-    'https://maps.googleapis.com/maps/api/place/details/json' +
-    `?place_id=${encodeURIComponent(PLACE_ID)}` +
-    '&fields=name,formatted_address,opening_hours,current_opening_hours' +
-    `&key=${encodeURIComponent(API_KEY)}`;
+    * {
+      box-sizing: border-box;
+    }
 
-  const res = await fetch(url);
-  const json = await res.json();
+    .page {
+      width: 800px;
+      height: 480px;
+      background: var(--bg);
+      padding: 22px 24px 18px 24px;
+    }
 
-  if (json.status !== 'OK' || !json.result) {
-    throw new Error(`Google Places error: ${json.status} ${json.error_message || ''}`);
-  }
+    .title {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      margin-bottom: 10px;
+    }
 
-  const place = json.result;
-  const hoursData = place.current_opening_hours || place.opening_hours || {};
-  const weekly = buildWeeklyHours(hoursData.periods || []);
+    .rule {
+      border-top: 2px solid var(--line);
+      margin: 0 0 12px 0;
+    }
 
-  const now = new Date();
-  const todayName = new Intl.DateTimeFormat('en-US', {
-    weekday: 'long',
-    timeZone: 'America/Toronto'
-  }).format(now);
+    .today {
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      column-gap: 18px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
 
-  const todayKey = todayName.toLowerCase();
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 120px;
+      height: 54px;
+      padding: 0 18px;
+      border-radius: 28px;
+      background: #000000;
+      color: #ffffff;
+      font-size: 18px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
 
-  const output = {
-    clinic_name: place.name || 'East Gwillimbury Medical Centre',
-    address: place.formatted_address || '',
-    status: hoursData.open_now ? 'open' : 'closed',
-    today_name: todayName,
-    today_hours: weekly[todayKey] || 'Closed',
-    monday: weekly.monday,
-    tuesday: weekly.tuesday,
-    wednesday: weekly.wednesday,
-    thursday: weekly.thursday,
-    friday: weekly.friday,
-    saturday: weekly.saturday,
-    sunday: weekly.sunday,
-    updated_at: new Date().toISOString(),
-    source: 'google_places_api'
-  };
+    .today-label {
+      color: var(--muted);
+      font-size: 17px;
+      margin-bottom: 2px;
+      text-transform: uppercase;
+    }
 
-  fs.writeFileSync('clinic-hours-sensecraft.json', JSON.stringify(output, null, 2) + '\n');
-}
+    .today-day {
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1.05;
+      margin-bottom: 4px;
+    }
 
-main().catch(err => {
-  console.error(err);
-  process.exit(1);
-});
+    .today-hours {
+      font-size: 23px;
+      font-weight: 700;
+      line-height: 1.1;
+    }
+
+    .section-label {
+      color: var(--muted);
+      font-size: 18px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 10px 0 8px 0;
+    }
+
+    .week {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0 34px;
+    }
+
+    .day-row {
+      display: grid;
+      grid-template-columns: 70px 1fr;
+      align-items: start;
+      padding: 7px 0 6px 0;
+      border-bottom: 2px solid var(--line);
+      min-height: 39px;
+    }
+
+    .day-name {
+      font-size: 18px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .day-hours {
+      font-size: 17px;
+      font-weight: 500;
+      line-height: 1.05;
+    }
+
+    .closed {
+      color: var(--muted);
+      font-style: italic;
+      font-weight: 700;
+    }
+
+    .loading,
+    .error {
+      font-size: 22px;
+      font-weight: 700;
+      padding-top: 40px;
+    }
+  </style>
+</head>
+<body>
+  <div class="page" id="page">
+    <div class="loading" id="loading">Loading clinic hours…</div>
+  </div>
+
+  <script>
+    const dayOrder = [
+      ['monday', 'MON'],
+      ['tuesday', 'TUE'],
+      ['wednesday', 'WED'],
+      ['thursday', 'THU'],
+      ['friday', 'FRI'],
+      ['saturday', 'SAT'],
+      ['sunday', 'SUN']
+    ];
+
+    function render(data) {
+      const page = document.getElementById('page');
+      const statusText = (data.status || 'closed').toUpperCase();
+      const statusClass = (data.status || 'closed').toLowerCase() === 'open' ? 'OPEN' : 'CLOSED';
+
+      const leftDays = dayOrder.slice(0, 3);
+      const rightDays = dayOrder.slice(3);
+
+      const buildRows = (days) => days.map(([key, label]) => {
+        const value = data[key] || 'Closed';
+        const isClosed = value.toLowerCase() === 'closed';
+        return `
+          <div class="day-row">
+            <div class="day-name">${label}</div>
+            <div class="day-hours ${isClosed ? 'closed' : ''}">${value}</div>
+          </div>
+        `;
+      }).join('');
+
+      page.innerHTML = `
+        <div class="title">${data.clinic_name || 'EAST GWILLIMBURY MEDICAL CENTRE'}</div>
+        <div class="rule"></div>
+
+        <div class="today">
+          <div>
+            <div class="status-pill">${statusClass}</div>
+          </div>
+          <div>
+            <div class="today-label">TODAY</div>
+            <div class="today-day">${data.today_name || ''}</div>
+            <div class="today-hours">${data.today_hours || 'Closed'}</div>
+          </div>
+        </div>
+
+        <div class="rule"></div>
+        <div class="section-label">WEEKLY HOURS</div>
+
+        <div class="week">
+          <div>${buildRows(leftDays)}</div>
+          <div>${buildRows(rightDays)}</div>
+        </div>
+      `;
+    }
+
+    fetch('./clinic-hours-sensecraft.json?t=' + Date.now())
+      .then(response => response.json())
+      .then(data => render(data))
+      .catch(() => {
+        document.getElementById('page').innerHTML =
+          '<div class="error">Unable to load clinic hours.</div>';
+      });
+  </script>
+</body>
+</html>
