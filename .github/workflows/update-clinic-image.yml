@@ -36,10 +36,4 @@ jobs:
       - name: Capture screenshot
         run: node screenshot.js
 
-      - name: Commit updated files
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add clinic-hours-sensecraft.json clinic-hours.png package.json package-lock.json update-hours.js
-          git diff --staged --quiet || git commit -m "Auto-update clinic hours and image [skip ci]"
-          git push
+git add clinic-hours-sensecraft.json clinic-hours-source.html clinic-hours.png package.json package-lock.json update-hours.js screenshot.js
