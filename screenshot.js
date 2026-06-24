@@ -12,16 +12,7 @@ const { chromium } = require('playwright');
     timeout: 60000
   });
 
-  await page.addStyleTag({
-    content: `
-      html, body, .page {
-        margin: 0 !important;
-        background: #ffffff !important;
-      }
-    `
-  });
-
-  await page.waitForTimeout(3000);
+  await page.waitForSelector('.title', { timeout: 60000 });
 
   await page.locator('.page').screenshot({
     path: 'clinic-hours.png'
