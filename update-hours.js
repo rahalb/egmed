@@ -3,110 +3,164 @@ const fs = require('fs');
 const API_KEY = process.env.GOOGLE_MAPS_API_KEY;
 const PLACE_ID = process.env.GOOGLE_PLACE_ID;
 
-const DAY_KEYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+if (!API_KEY) throw new Error('Missing GOOGLE_MAPS_API_KEY');
+if (!PLACE_ID) throw new Error('Missing GOOGLE_PLACE_ID');
 
-function formatTime(time) {
-  // time is like "1000" or "1430"
-  let h = parseInt(time.slice(0, 2), 10);
-  const m = time.slice(2);
-  const period = h >= 12 ? 'PM' : 'AM';
-  if (h === 0) h = 12;
-  else if (h > 12) h -= 12;
-  return m === '00' ? `${h}:00 ${period}` : `${h}:${m} ${period}`;
+const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+
+function hhmmToDisplay(hhmm) {
+  const hh = parseInt(hhmm.slice(0, 2), 10);
+  const mm = hhmm.slice(2);
+  const ampm = hh >= 12 ? 'PM' : 'AM';
+  let hour = hh % 12;
+  if (hour === 0) hour = 12;
+  return `${hour}:${mm} ${ampm}`;
 }
 
-function buildHoursMap(periods) {
-  const map = {};
-  for (const key of DAY_KEYS) map[key] = 'Closed';
+function hhmmToMinutes(hhmm) {
+  const hh = parseInt(hhmm.slice(0, 2), 10);
+  const mm = parseInt(hhmm.slice(2), 10);
+  return hh * 60 + mm;
+}
 
-  for (const period of periods) {
-    const dayKey = DAY_KEYS[period.open.day];
-    const open = formatTime(period.open.time);
-    const close = formatTime(period.close.time);
-    const range = `${open} – ${close}`;
-    if (map[dayKey] === 'Closed') {
-      map[dayKey] = range;
-    } else {
-      map[dayKey] += `, ${range}`;
+function getTorontoNowParts(date = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Toronto',
+    weekday: 'long',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }).formatToParts(date);
+
+  const map = Object.fromEntries(parts.map(part => [part.type, part.value]));
+
+  return {
+    dayName: map.weekday.toLowerCase(),
+    minutes: parseInt(map.hour, 10) * 60 + parseInt(map.minute, 10)
+  };
+}
+
+function buildWeeklyHours(periods) {
+  const weekly = {
+    monday: 'Closed',
+    tuesday: 'Closed',
+    wednesday: 'Closed',
+    thursday: 'Closed',
+    friday: 'Closed',
+    saturday: 'Closed',
+    sunday: 'Closed'
+  };
+
+  const grouped = {
+    sunday: [],
+    monday: [],
+    tuesday: [],
+    wednesday: [],
+    thursday: [],
+    friday: [],
+    saturday: []
+  };
+
+  for (const period of periods || []) {
+    if (!period.open || !period.close) continue;
+
+    const openDay = DAY_NAMES[period.open.day];
+    const openTime = hhmmToDisplay(period.open.time);
+    const closeTime = hhmmToDisplay(period.close.time);
+
+    grouped[openDay].push(`${openTime} – ${closeTime}`);
+  }
+
+  for (const day of Object.keys(grouped)) {
+    if (grouped[day].length > 0) {
+      weekly[day] = grouped[day].join(', ');
     }
   }
-  return map;
+
+  return weekly;
 }
 
-function isOpenNow(hoursText, nowMinutes) {
-  if (!hoursText || hoursText.toLowerCase() === 'closed') return false;
-  for (const range of hoursText.split(',').map(s => s.trim())) {
-    const parts = range.split('–').map(s => s.trim());
-    if (parts.length !== 2) continue;
-    const toMins = t => {
-      const m = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
-      if (!m) return null;
-      let h = parseInt(m[1]);
-      const min = parseInt(m[2]);
-      const p = m[3].toUpperCase();
-      if (p === 'AM' && h === 12) h = 0;
-      if (p === 'PM' && h !== 12) h += 12;
-      return h * 60 + min;
-    };
-    const start = toMins(parts[0]);
-    const end = toMins(parts[1]);
-    if (start !== null && end !== null && nowMinutes >= start && nowMinutes < end) return true;
-  }
-  return false;
+function isOpenWithEarlyClose(periods, closeEarlyMinutes = 5, now = new Date()) {
+  const { dayName, minutes: nowMinutes } = getTorontoNowParts(now);
+  const today = DAY_NAMES.indexOf(dayName);
+  const yesterday = (today + 6) % 7;
+
+  return (periods || []).some(period => {
+    if (!period.open || !period.close) return false;
+
+    const openDay = period.open.day;
+    const closeDay = period.close.day;
+    const openMinutes = hhmmToMinutes(period.open.time);
+    const rawCloseMinutes = hhmmToMinutes(period.close.time);
+    const closeMinutes = Math.max(0, rawCloseMinutes - closeEarlyMinutes);
+
+    if (openDay === closeDay) {
+      return today === openDay &&
+        nowMinutes >= openMinutes &&
+        nowMinutes < closeMinutes;
+    }
+
+    if (today === openDay && nowMinutes >= openMinutes) {
+      return true;
+    }
+
+    if (today === closeDay && nowMinutes < closeMinutes) {
+      return true;
+    }
+
+    if (yesterday === openDay && today === closeDay && nowMinutes < closeMinutes) {
+      return true;
+    }
+
+    return false;
+  });
 }
 
 async function main() {
-  if (!API_KEY || !PLACE_ID) {
-    throw new Error('Missing GOOGLE_MAPS_API_KEY or GOOGLE_PLACE_ID environment variables');
-  }
+  const url =
+    'https://maps.googleapis.com/maps/api/place/details/json' +
+    `?place_id=${encodeURIComponent(PLACE_ID)}` +
+    '&fields=name,formatted_address,opening_hours,current_opening_hours' +
+    `&key=${encodeURIComponent(API_KEY)}`;
 
-  const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${PLACE_ID}&fields=name,opening_hours&key=${API_KEY}`;
   const res = await fetch(url);
   const json = await res.json();
 
-  if (json.status !== 'OK') {
-    throw new Error(`Google Places API error: ${json.status} - ${json.error_message || ''}`);
+  if (json.status !== 'OK' || !json.result) {
+    throw new Error(`Google Places error: ${json.status} ${json.error_message || ''}`);
   }
 
   const place = json.result;
-  const periods = place.opening_hours?.periods || [];
-  const hoursMap = buildHoursMap(periods);
+  const hoursData = place.current_opening_hours || place.opening_hours || {};
+  const periods = hoursData.periods || [];
+  const weekly = buildWeeklyHours(periods);
 
-  // Get current Toronto time
   const now = new Date();
-  const torontoParts = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/Toronto',
+  const todayName = new Intl.DateTimeFormat('en-US', {
     weekday: 'long',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
-  }).formatToParts(now);
+    timeZone: 'America/Toronto'
+  }).format(now);
 
-  const todayName = torontoParts.find(p => p.type === 'weekday').value;
   const todayKey = todayName.toLowerCase();
-  const hour = parseInt(torontoParts.find(p => p.type === 'hour').value);
-  const minute = parseInt(torontoParts.find(p => p.type === 'minute').value);
-  const period = torontoParts.find(p => p.type === 'dayPeriod').value.toUpperCase();
-  let h = hour;
-  if (period === 'AM' && h === 12) h = 0;
-  if (period === 'PM' && h !== 12) h += 12;
-  const nowMinutes = h * 60 + minute;
 
-  const todayHours = hoursMap[todayKey] || 'Closed';
-  const open = isOpenNow(todayHours, nowMinutes);
-
-  const data = {
-    clinic_name: place.name || 'EAST GWILLIMBURY MEDICAL CENTRE',
-    status: open ? 'open' : 'closed',
+  const output = {
+    clinic_name: place.name || 'East Gwillimbury Medical Centre',
+    address: place.formatted_address || '',
+    status: isOpenWithEarlyClose(periods, 5, now) ? 'open' : 'closed',
     today_name: todayName,
-    today_hours: todayHours,
-    ...hoursMap
+    today_hours: weekly[todayKey] || 'Closed',
+    monday: weekly.monday,
+    tuesday: weekly.tuesday,
+    wednesday: weekly.wednesday,
+    thursday: weekly.thursday,
+    friday: weekly.friday,
+    saturday: weekly.saturday,
+    sunday: weekly.sunday,
+    updated_at: new Date().toISOString(),
+    source: 'google_places_api'
   };
 
-  fs.writeFileSync('clinic-hours-sensecraft.json', JSON.stringify(data, null, 2));
-  console.log('Updated clinic-hours-sensecraft.json');
-  console.log(`Today: ${todayName} | Hours: ${todayHours} | Status: ${data.status}`);
+  fs.writeFileSync('clinic-hours-sensecraft.json', JSON.stringify(output, null, 2) + '\n');
 }
 
 main().catch(err => {
