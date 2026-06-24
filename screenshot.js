@@ -14,14 +14,8 @@ const { chromium } = require('playwright');
 
   await page.addStyleTag({
     content: `
-      html, body {
+      html, body, .page {
         margin: 0 !important;
-        background: #ffffff !important;
-      }
-      * {
-        background-color: transparent;
-      }
-      .page {
         background: #ffffff !important;
       }
     `
@@ -29,9 +23,8 @@ const { chromium } = require('playwright');
 
   await page.waitForTimeout(3000);
 
-  await page.screenshot({
-    path: 'clinic-hours.png',
-    fullPage: false
+  await page.locator('.page').screenshot({
+    path: 'clinic-hours.png'
   });
 
   await browser.close();
