@@ -7,12 +7,13 @@ const { chromium } = require('playwright');
     deviceScaleFactor: 1
   });
 
-  await page.goto('https://rahalb.github.io/egmed/clinic-hours-source.html', {
+  await page.goto('https://rahalb.github.io/egmed/', {
     waitUntil: 'networkidle',
     timeout: 60000
   });
 
-  await page.waitForSelector('#clinic_name', { timeout: 60000 });
+  // Wait for the page to settle, no selector needed
+  await page.waitForTimeout(3000);
 
   await page.screenshot({
     path: 'clinic-hours.png',
