@@ -2,15 +2,15 @@
   "clinic_name": "East Gwillimbury Medical Centre",
   "address": "45 Grist Mill Rd Unit 2, Holland Landing, ON L9N 1M7, Canada",
   "status": "closed",
-  "today_name": "Saturday",
+  "today_name": "Sunday",
   "today_hours": "Closed",
   "monday": "Closed",
   "tuesday": "10:00 AM – 3:00 PM, 4:30 PM – 7:00 PM",
   "wednesday": "10:00 AM – 3:00 PM",
   "thursday": "10:00 AM – 3:00 PM",
   "friday": "10:00 AM – 3:00 PM",
-  "saturday": "Closed",
+  "saturday": "10:10 AM – 2:10 PM",
   "sunday": "Closed",
-  "updated_at": "2026-08-02T03:47:56.758Z",
+  "updated_at": "2026-08-02T06:22:15.027Z",
   "source": "google_places_api"
 }
