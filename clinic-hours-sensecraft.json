@@ -3,14 +3,14 @@
   "address": "45 Grist Mill Rd Unit 2, Holland Landing, ON L9N 1M7, Canada",
   "status": "open",
   "today_name": "Monday",
-  "today_hours": "10:00 AM – 3:00 PM, 4:30 PM – 7:00 PM",
-  "monday": "10:00 AM – 3:00 PM, 4:30 PM – 7:00 PM",
+  "today_hours": "10:00 AM – 3:00 PM, 4:30 PM – 6:30 PM",
+  "monday": "10:00 AM – 3:00 PM, 4:30 PM – 6:30 PM",
   "tuesday": "10:00 AM – 3:00 PM, 4:30 PM – 7:00 PM",
   "wednesday": "10:00 AM – 3:00 PM",
   "thursday": "10:00 AM – 3:00 PM",
   "friday": "10:00 AM – 3:00 PM",
   "saturday": "10:10 AM – 2:10 PM",
   "sunday": "Closed",
-  "updated_at": "2026-08-17T21:56:41.722Z",
+  "updated_at": "2026-08-17T22:10:03.356Z",
   "source": "google_places_api"
 }
