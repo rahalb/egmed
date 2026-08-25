@@ -8,9 +8,9 @@
   "tuesday": "10:00 AM – 3:00 PM, 4:30 PM – 7:00 PM",
   "wednesday": "10:00 AM – 3:00 PM",
   "thursday": "10:00 AM – 3:00 PM",
-  "friday": "10:00 AM – 3:00 PM",
+  "friday": "Closed",
   "saturday": "10:10 AM – 2:10 PM",
   "sunday": "Closed",
-  "updated_at": "2026-08-25T18:01:20.162Z",
+  "updated_at": "2026-08-25T18:44:19.354Z",
   "source": "google_places_api"
 }
